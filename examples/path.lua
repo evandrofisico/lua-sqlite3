@@ -1,3 +1,1 @@
-
-local path = "?;?.lua;../?;../?.lua"
-package.path = path
+package.path = "?;?.lua;../?;../?.lua"

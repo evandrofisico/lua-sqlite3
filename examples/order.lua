@@ -1,8 +1,7 @@
-require "path"
-require "lua-sqlite3"
+local sqlite3 = require("lua-sqlite3")
 
 
-local db = assert( sqlite3:open_memory() )
+local db = assert( sqlite3.open_memory() )
 
 
 assert( db:exec[[
