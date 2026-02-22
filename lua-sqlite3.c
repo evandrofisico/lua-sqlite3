@@ -46,7 +46,19 @@
  *
  */
 
+
+#if LUA_VERSION_NUM < 502
+
+size_t lua_string_len (lua_State *L, int idx){
+	return lua_objlen (L, idx);
+}
+#endif 
+
 #if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM >= 502
+
+size_t lua_string_len (lua_State *L, int idx){
+	return lua_rawlen (L, idx);
+}
 
 int luaL_typerror (lua_State *L, int narg, const char *tname) {
   const char *msg = lua_pushfstring(L, "%s expected, got %s", tname,
@@ -59,10 +71,10 @@ void luaL_register (lua_State *L, const char *libname, const luaL_Reg *l){
   luaL_setfuncs(L, l, 0);
 }
 
-
-#define lua_strlen
-
 #endif 
+
+
+
 
 
 #define IS_INT(n)		( ( (lua_Number) ((int)(n)) )  == (n) )
@@ -361,14 +373,14 @@ FUNC( l_sqlite3_bind_null )
 
 FUNC( l_sqlite3_bind_text )
 {
-  lua_pushnumber(L, sqlite3_bind_text(checkstmt_stmt(L, 1), checkint(L, 2), checkstr(L, 3), lua_rawlen(L, 3), SQLITE_TRANSIENT) );
+  lua_pushnumber(L, sqlite3_bind_text(checkstmt_stmt(L, 1), checkint(L, 2), checkstr(L, 3), lua_string_len(L, 3), SQLITE_TRANSIENT) );
   return 1;
 }
 
 
 FUNC( l_sqlite3_bind_blob )
 {
-  lua_pushnumber(L, sqlite3_bind_blob(checkstmt_stmt(L, 1), checkint(L, 2), checkstr(L, 3), lua_rawlen(L, 3), SQLITE_TRANSIENT) );
+  lua_pushnumber(L, sqlite3_bind_blob(checkstmt_stmt(L, 1), checkint(L, 2), checkstr(L, 3), lua_string_len(L, 3), SQLITE_TRANSIENT) );
   return 1;
 }
 
@@ -433,7 +445,7 @@ FUNC( l_sqlite3_bind )
       break;
     
     case LUA_TSTRING:
-      lua_pushnumber(L, sqlite3_bind_text(stmt, index, lua_tostring(L, 3), lua_rawlen(L, 3), SQLITE_TRANSIENT) );
+      lua_pushnumber(L, sqlite3_bind_text(stmt, index, lua_tostring(L, 3), lua_string_len(L, 3), SQLITE_TRANSIENT) );
       break;
     
     default:
@@ -826,7 +838,7 @@ FUNC( l_sqlite3_prepare )
   
   DB * db			= checkdb(L, 1);
   const char * sql		= checkstr(L, 2);
-  int sql_size			= lua_rawlen(L, 2);
+  int sql_size			= lua_string_len(L, 2);
   const char * leftover		= 0;
   sqlite3_stmt * sqlite3_stmt 	= 0;
   int error, leftover_size;
@@ -958,7 +970,7 @@ static void func_callback_wrapper(int which, sqlite3_context * ctx, int num_args
   if (lua_pcall(L, values ? 3 : 1, 0, 0))
   {
     fprintf(stderr, "lua-sqlite3: func_callback_wrapper: Warning: user function error: %s\n", lua_tostring(L, -1));
-    sqlite3_result_error(ctx, lua_tostring(L, -1), lua_rawlen(L, -1));
+    sqlite3_result_error(ctx, lua_tostring(L, -1), lua_string_len(L, -1));
 /* EVANDRO: Validar os tamanhos das strings de retorno */
     lua_pop(L, 1);
   }
@@ -1134,7 +1146,7 @@ FUNC( l_sqlite3_result_null )
 
 FUNC( l_sqlite3_result_error )
 {
-  sqlite3_result_error(checkcontext(L, 1), checkstr(L, 2), lua_rawlen(L, 2));
+  sqlite3_result_error(checkcontext(L, 1), checkstr(L, 2), lua_string_len(L, 2));
   return 0;
 }
 
@@ -1168,14 +1180,14 @@ FUNC( l_sqlite3_result_number )
 
 FUNC( l_sqlite3_result_blob )
 {
-  sqlite3_result_blob(checkcontext(L, 1), checkstr(L, 2), lua_rawlen(L, 2), SQLITE_TRANSIENT);
+  sqlite3_result_blob(checkcontext(L, 1), checkstr(L, 2), lua_string_len(L, 2), SQLITE_TRANSIENT);
   return 0;
 }
 
 
 FUNC( l_sqlite3_result_text )
 {
-  sqlite3_result_text(checkcontext(L, 1), checkstr(L, 2), lua_rawlen(L, 2), SQLITE_TRANSIENT);
+  sqlite3_result_text(checkcontext(L, 1), checkstr(L, 2), lua_string_len(L, 2), SQLITE_TRANSIENT);
   return 0;
 }
 
@@ -1218,7 +1230,7 @@ FUNC( l_sqlite3_result )
       break;
     
     case LUA_TSTRING:
-      sqlite3_result_text(context, lua_tostring(L, 2), lua_rawlen(L, 2), SQLITE_TRANSIENT);
+      sqlite3_result_text(context, lua_tostring(L, 2), lua_string_len(L, 2), SQLITE_TRANSIENT);
       break;
     
     default:
